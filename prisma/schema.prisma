@@ -13,9 +13,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id      Int     @id @default(autoincrement())
-  name    String
-  email   String  @unique
-  isAdmin Boolean @default(false)
+model Usuario {
+  id      String   @id @default(uuid())
+  edad    Int
+  nombre  String
+  email   String   @unique
+  esAdmin Boolean  @default(false)
+  habitos Habito[]
+  role    Role     @default(USUARIO)
+
+  @@unique([edad, nombre])
+  @@index([email])
+}
+
+model Habito {
+  titulo      String
+  id          String   @id @default(uuid())
+  creadoEn    DateTime @default(now())
+  updateadoEn DateTime @updatedAt
+  userId      Int
+  autor       Usuario  @relation(fields: [autorId], references: [id])
+  autorId     String
+}
+
+enum Role {
+  USUARIO
+  ADMIN
 }

@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// /ProgramacionDeAppsMoviles/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -14,26 +10,27 @@ datasource db {
 }
 
 model Usuario {
-  id      String   @id @default(uuid())
-  edad    Int
-  nombre  String
-  email   String   @unique
-  esAdmin Boolean  @default(false)
-  habitos Habito[]
-  role    Role     @default(USUARIO)
+  id       String   @id @default(uuid())
+  nombre   String
+  apellido String
+  edad     Int
+  email    String   @unique
+  password String
+  esAdmin  Boolean  @default(false)
+  habitos  Habito[]
+  role     Role     @default(USUARIO)
 
   @@unique([edad, nombre])
   @@index([email])
 }
 
 model Habito {
-  titulo      String
   id          String   @id @default(uuid())
+  titulo      String
   creadoEn    DateTime @default(now())
   updateadoEn DateTime @updatedAt
-  userId      Int
-  autor       Usuario  @relation(fields: [autorId], references: [id])
-  autorId     String
+  userId      String
+  autor       Usuario  @relation(fields: [userId], references: [id])
 }
 
 enum Role {

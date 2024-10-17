@@ -1,14 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `User` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropForeignKey
-ALTER TABLE "Habito" DROP CONSTRAINT "Habito_autorId_fkey";
-
--- DropTable
-DROP TABLE "User";
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('USUARIO', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "Usuario" (
@@ -20,6 +11,18 @@ CREATE TABLE "Usuario" (
     "role" "Role" NOT NULL DEFAULT 'USUARIO',
 
     CONSTRAINT "Usuario_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Habito" (
+    "titulo" TEXT NOT NULL,
+    "id" TEXT NOT NULL,
+    "creadoEn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updateadoEn" TIMESTAMP(3) NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "autorId" TEXT NOT NULL,
+
+    CONSTRAINT "Habito_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex

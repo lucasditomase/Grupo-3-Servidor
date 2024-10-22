@@ -46,7 +46,6 @@ app.post("/register", async (req, res) => {
     const user = await prisma.usuario.create({
       data: {
         nombre,
-        apellido,
         edad,
         email,
         password: hashedPassword,
@@ -119,7 +118,8 @@ app.post("/login", async (req, res) => {
         role: user.role,
       },
     });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Internal server error." });
   }

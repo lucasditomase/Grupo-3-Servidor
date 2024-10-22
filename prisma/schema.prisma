@@ -1,5 +1,3 @@
-// /ProgramacionDeAppsMoviles/prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,27 +8,15 @@ datasource db {
 }
 
 model Usuario {
-  id       String   @id @default(uuid())
-  nombre   String
-  apellido String
   edad     Int
-  email    String   @unique
+  nombre   String
+  email    String @unique
+  role     Role   @default(USUARIO)
+  id       Int    @id @default(autoincrement())
   password String
-  esAdmin  Boolean  @default(false)
-  habitos  Habito[]
-  role     Role     @default(USUARIO)
 
   @@unique([edad, nombre])
   @@index([email])
-}
-
-model Habito {
-  id          String   @id @default(uuid())
-  titulo      String
-  creadoEn    DateTime @default(now())
-  updateadoEn DateTime @updatedAt
-  userId      String
-  autor       Usuario  @relation(fields: [userId], references: [id])
 }
 
 enum Role {

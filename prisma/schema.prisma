@@ -7,15 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
-  edad     Int
-  nombre   String
-  email    String @unique
-  role     Role   @default(USUARIO)
-  id       Int    @id @default(autoincrement())
-  password String
+model User {
+  userId         Int     @id @default(autoincrement())
+  email          String  @unique
+  username       String
+  hashedPassword String
+  name           String  @default("")
+  profileImage   String?
+  role           Role    @default(USUARIO)
 
-  @@unique([edad, nombre])
   @@index([email])
 }
 

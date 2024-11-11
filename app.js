@@ -1,92 +1,85 @@
-const express = require("express");
-const cors = require("cors");
+const express = require('express');
+const cors = require('cors');
+const authLib = require('./lib/authLib');
+
 const app = express();
 const port = 3000;
-const authLib = require("./lib/authLib");
-const e = require("express");
 
 app.use(express.json());
-
 app.use(
-  cors({
-    origin: "http://localhost:8081",
-    credentials: true,
-  })
+    cors({
+        origin: 'http://localhost:8081',
+        credentials: true,
+    })
 );
 
-app.get("/", authLib.validateAuthorization, (req, res) => {
-  const message = "Welcome to the secret backend " + req.userData.username;
-  res.send(message);
+// Middleware to validate request body
+const validateRequestBody = (requiredFields) => (req, res, next) => {
+    for (const field of requiredFields) {
+        if (!req.body[field]) {
+            return res.status(400).json({
+                message: `Please provide ${requiredFields.join(', ')}`,
+            });
+        }
+    }
+    next();
+};
+
+// Root route
+app.get('/', authLib.validateAuthorization, (req, res) => {
+    const message = `Welcome to the secret backend ${req.userData.username}`;
+    res.send(message);
 });
 
-//Login user
-app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).json({
-        message: "Please provide email and password",
-      });
-      return;
+// Login user
+app.post(
+    '/login',
+    validateRequestBody(['email', 'password']),
+    async (req, res) => {
+        try {
+            const { email, password } = req.body;
+            const token = await authLib.loginUser(email, password);
+            res.status(200).json({ message: 'Login successful!', token });
+        } catch (err) {
+            res.status(500).json({ message: err.message });
+        }
     }
+);
 
-    const token = await authLib.loginUser(email, password);
-
-    res.status(200).json({
-      message: "Login successful!",
-      token: token,
-    });
-  } catch (err) {
-    res.status(500).json(err.message);
-  }
-});
-
-//Register user
-app.post("/register", async (req, res) => {
-  try {
-    console.log(req.body);
-    const { username, email, password, name } = req.body;
-    if (!email || !password || !username) {
-      res.status(400).json({
-        message: "Please provide email, username, and password",
-      });
-      return;
+// Register user
+app.post(
+    '/register',
+    validateRequestBody(['username', 'email', 'password']),
+    async (req, res) => {
+        try {
+            const { username, email, password } = req.body;
+            const token = await authLib.registerUser(email, username, password);
+            res.status(200).json({ message: 'Register successful!', token });
+            console.log('User has successfully registered!');
+        } catch (err) {
+            if (err.message === 'Email already in use') {
+                console.log('Error registering user: Email already in use');
+                res.status(400).json({ message: err.message });
+            } else {
+                console.log('Error registering user');
+                res.status(500).json({ message: 'Server error' });
+            }
+        }
     }
+);
 
-    const token = await authLib.registerUser(email, username, password, name);
-
-    res.status(200).json({
-      message: "Register successful!",
-      token: token,
-    });
-
-    console.log("User has successfully registered!");
-  } catch (err) {
-    if (err.message === "Email already in use") {
-      console.log("Error al registrar usuario: Email already in use");
-      res.status(400).json({ message: err.message });
+// Get user data
+app.get('/user/:id?', authLib.validateAuthorization, (req, res) => {
+    if (req.params.id) {
+        res.json({ message: 'Functionality not yet implemented!' });
     } else {
-      console.log("Error al registrar usuario");
-      res.status(500).json({ message: "Server error" });
+        const { hashedPassword, ...userData } = req.userData;
+        res.json(userData);
     }
-  }
-});
-
-//Get user data
-app.get("/user/:id?", authLib.validateAuthorization, (req, res) => {
-  if (req.params.id) {
-    //TODO: Para cuando necesitemos ver los datos de otros usuarios.
-    res.json({
-      message: "Functionality not yet implemented!",
-    });
-  } else {
-    delete req.userData.hashedPassword;
-    res.json(req.userData);
-  }
 });
 
 app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+    console.log(`Server listening on port ${port}`);
 });
 
 module.exports = app;

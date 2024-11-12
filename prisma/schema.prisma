@@ -10,9 +10,8 @@ datasource db {
 model User {
   userId         Int     @id @default(autoincrement())
   email          String  @unique
-  username       String
+  username       String  @unique
   hashedPassword String
-  name           String  @default("")
   profileImage   String?
   role           Role    @default(USUARIO)
 

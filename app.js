@@ -39,9 +39,19 @@ app.post(
         try {
             const { email, password } = req.body;
             const token = await authLib.loginUser(email, password);
+
+            if (!token) {
+                return res
+                    .status(401)
+                    .json({ message: 'Invalid email or password' });
+            }
+
             res.status(200).json({ message: 'Login successful!', token });
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            console.error('Error during login:', err.message);
+            res.status(500).json({
+                message: 'Server error. Please try again later.',
+            });
         }
     }
 );
@@ -53,17 +63,48 @@ app.post(
     async (req, res) => {
         try {
             const { username, email, password } = req.body;
-            const token = await authLib.registerUser(email, username, password);
-            res.status(200).json({ message: 'Register successful!', token });
+            const result = await authLib.registerUser(
+                email,
+                username,
+                password
+            );
+
+            if (result.status === 'user_exists') {
+                return res
+                    .status(400)
+                    .json({
+                        message: 'Ya hay hay un usuario con estos datos.',
+                    });
+            }
+
+            // Handle known cases within the try block
+            if (result.status === 'email_exists') {
+                return res
+                    .status(400)
+                    .json({ message: 'Ya hay una persona con este email. ' });
+            }
+
+            if (result.status === 'username_exists') {
+                return res.status(400).json({
+                    message: 'Ya hay una persona con este nombre de usuario. ',
+                });
+            }
+
+            if (result.status === 'creation_failed') {
+                return res
+                    .status(400)
+                    .json({ message: 'User creation failed' });
+            }
+
+            res.status(200).json({
+                message: 'Register successful!',
+                token: result.token,
+            });
             console.log('User has successfully registered!');
         } catch (err) {
-            if (err.message === 'Email already in use') {
-                console.log('Error registering user: Email already in use');
-                res.status(400).json({ message: err.message });
-            } else {
-                console.log('Error registering user');
-                res.status(500).json({ message: 'Server error' });
-            }
+            // Handle only unknown errors in the catch block
+            console.error('Error during registration:', err.message);
+            res.status(500).json({ message: 'Server error' });
         }
     }
 );

@@ -59,25 +59,47 @@ app.post(
 // Register user
 app.post(
     '/register',
-    validateRequestBody(['username', 'email', 'password']),
+    validateRequestBody([
+        'username',
+        'email',
+        'password',
+        'nacimientoDia',
+        'nacimientoMes',
+        'nacimientoAnio',
+    ]),
     async (req, res) => {
         try {
-            const { username, email, password } = req.body;
-            const result = await authLib.registerUser(
-                email,
+            const {
                 username,
-                password
+                email,
+                password,
+                nacimientoDia,
+                nacimientoMes,
+                nacimientoAnio,
+            } = req.body;
+            console.log(
+                username,
+                email,
+                password,
+                nacimientoDia,
+                nacimientoMes,
+                nacimientoAnio
+            );
+            const result = await authLib.registerUser(
+                username,
+                email,
+                password,
+                nacimientoDia,
+                nacimientoMes,
+                nacimientoAnio
             );
 
             if (result.status === 'user_exists') {
-                return res
-                    .status(400)
-                    .json({
-                        message: 'Ya hay hay un usuario con estos datos.',
-                    });
+                return res.status(400).json({
+                    message: 'Ya hay hay un usuario con estos datos.',
+                });
             }
 
-            // Handle known cases within the try block
             if (result.status === 'email_exists') {
                 return res
                     .status(400)
@@ -102,22 +124,11 @@ app.post(
             });
             console.log('User has successfully registered!');
         } catch (err) {
-            // Handle only unknown errors in the catch block
             console.error('Error during registration:', err.message);
             res.status(500).json({ message: 'Server error' });
         }
     }
 );
-
-// Get user data
-app.get('/user/:id?', authLib.validateAuthorization, (req, res) => {
-    if (req.params.id) {
-        res.json({ message: 'Functionality not yet implemented!' });
-    } else {
-        const { hashedPassword, ...userData } = req.userData;
-        res.json(userData);
-    }
-});
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);

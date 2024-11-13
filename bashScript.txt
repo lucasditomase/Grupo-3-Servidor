@@ -1,2 +1,2 @@
 docker compose up -d
-npm run devStart
+npm run start

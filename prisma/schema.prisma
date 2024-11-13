@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  userId         Int     @id @default(autoincrement())
-  email          String  @unique
-  username       String  @unique
+  userId         Int      @id @default(autoincrement())
+  email          String   @unique
+  username       String   @unique
+  dateOfBirth    DateTime @default(now())
   hashedPassword String
   profileImage   String?
-  role           Role    @default(USUARIO)
+  role           Role     @default(USUARIO)
 
   @@index([email])
 }

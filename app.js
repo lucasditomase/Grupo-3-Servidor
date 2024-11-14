@@ -38,6 +38,7 @@ app.post(
     async (req, res) => {
         try {
             const { email, password } = req.body;
+            console.log(email, password);
             const token = await authLib.loginUser(email, password);
 
             if (!token) {
@@ -69,6 +70,7 @@ app.post(
     ]),
     async (req, res) => {
         try {
+            console.log('caca', req.body);
             const {
                 username,
                 email,
@@ -77,14 +79,7 @@ app.post(
                 nacimientoMes,
                 nacimientoAnio,
             } = req.body;
-            console.log(
-                username,
-                email,
-                password,
-                nacimientoDia,
-                nacimientoMes,
-                nacimientoAnio
-            );
+
             const result = await authLib.registerUser(
                 username,
                 email,
@@ -115,13 +110,14 @@ app.post(
             if (result.status === 'creation_failed') {
                 return res
                     .status(400)
-                    .json({ message: 'User creation failed' });
+                    .json({ message: 'Hubo un error al crear el usuario' });
             }
 
             res.status(200).json({
                 message: 'Register successful!',
                 token: result.token,
             });
+
             console.log('User has successfully registered!');
         } catch (err) {
             console.error('Error during registration:', err.message);

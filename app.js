@@ -1,11 +1,29 @@
 const express = require('express');
 const cors = require('cors');
 const authLib = require('./lib/authLib');
-
+const { PrismaClient } = require('@prisma/client');
+const path = require('path');
+const fs = require('fs');
 const app = express();
+const prisma = new PrismaClient();
 const port = 3000;
+const multer = require('multer');
 
-app.use(express.json());
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const fileExtension = path.extname(file.originalname); // Extract file extension
+        cb(null, req.userData.userId + '.jpg');
+    },
+});
+
+const upload = multer({ storage: storage });
+
+// Increase payload limit
+app.use(express.json({ limit: '50mb' })); // Set the limit to 10MB or as required
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(
     cors({
         origin: 'http://localhost:8081',
@@ -25,18 +43,13 @@ const validateRequestBody = (requiredFields) => (req, res, next) => {
     next();
 };
 
-// Root route
-app.get('/', authLib.validateAuthorization, (req, res) => {
-    const message = `Welcome to the secret backend ${req.userData.username}`;
-    res.send(message);
-});
-
 // Login user
 app.post(
     '/login',
     validateRequestBody(['email', 'password']),
     async (req, res) => {
         try {
+            console.log('Login request received');
             const { email, password } = req.body;
             console.log(email, password);
             const token = await authLib.loginUser(email, password);
@@ -70,7 +83,6 @@ app.post(
     ]),
     async (req, res) => {
         try {
-            console.log('caca', req.body);
             const {
                 username,
                 email,
@@ -125,6 +137,72 @@ app.post(
         }
     }
 );
+
+app.get('/uploads/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).json({ message: 'Image not found' });
+    }
+});
+
+app.post(
+    '/upload-image',
+    validateRequestBody(['image']),
+    authLib.validateAuthorization,
+    async (req, res) => {
+        try {
+            const { image } = req.body;
+            const userId = req.userData.userId;
+            const imageBuffer = Buffer.from(image, 'base64'); // Decode the base64 string
+
+            // Ensure the 'uploads' directory exists
+            const uploadsDir = path.join(__dirname, 'uploads');
+            if (!fs.existsSync(uploadsDir)) {
+                fs.mkdirSync(uploadsDir);
+            }
+
+            const imagePath = path.join(uploadsDir, `${userId}.png`); // Save as a unique file
+            fs.writeFileSync(imagePath, imageBuffer); // Save the image file
+
+            // Update the user's profile image path in the database
+            const relativePath = `uploads/${userId}.png`;
+            await prisma.user.update({
+                where: { userId: userId },
+                data: { profileImage: relativePath },
+            });
+
+            res.status(200).json({
+                message: 'Image uploaded successfully',
+                path: relativePath,
+            });
+        } catch (err) {
+            console.error('Error saving image:', err.message);
+            res.status(500).json({ message: 'Error uploading image' });
+        }
+    }
+);
+
+app.post(
+    '/upload-profile-picture',
+    authLib.validateAuthorization,
+    upload.single('profile_picture'),
+    async (req, res) => {
+        try {
+            res.json({ message: 'Profile picture uploaded successfully' });
+        } catch (error) {
+            console.error('Error uploading profile picture:', error);
+            res.status(500).json({
+                message: 'Error uploading profile picture',
+            });
+        }
+    }
+);
+
+app.use('/uploads', express.static('uploads'));
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);

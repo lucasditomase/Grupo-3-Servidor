@@ -11,15 +11,36 @@ model User {
   userId         Int      @id @default(autoincrement())
   email          String   @unique
   username       String   @unique
-  dateOfBirth    DateTime @default(now())
   hashedPassword String
-  profileImage   String?
-  role           Role     @default(USUARIO)
+  dateOfBirth    DateTime @default(now())
+  Habito         Habito[]
 
   @@index([email])
 }
 
-enum Role {
-  USUARIO
-  ADMIN
+model Habito {
+  habitoId   Int        @id @default(autoincrement())
+  nombre     String
+  userId     Int
+  frequencia Frequencia
+  categoria  Categoria
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@index([nombre])
+}
+
+enum Frequencia {
+  DIARIA
+  SEMANAL
+  MENSUAL
+}
+
+enum Categoria {
+  SALUD
+  DEPORTE
+  ESTUDIO
+  TRABAJO
+  OCIO
+  OTROS
 }

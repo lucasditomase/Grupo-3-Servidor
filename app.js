@@ -204,6 +204,96 @@ app.post(
 
 app.use('/uploads', express.static('uploads'));
 
+app.post(
+    '/crear-habito',
+    authLib.validateAuthorization, // Ensures user is authorized
+    validateRequestBody(['nombre', 'frequencia', 'categoria']), // Validates the required fields
+    async (req, res) => {
+        try {
+            // Extract data from request
+            const { nombre, frequencia, categoria } = req.body;
+            const userId = req.userData.userId; // Extract user ID from the authorization middleware
+
+            // Validate enum values
+            const validFrequencies = ['DIARIA', 'SEMANAL', 'MENSUAL'];
+            const validCategories = [
+                'SALUD',
+                'DEPORTE',
+                'ESTUDIO',
+                'TRABAJO',
+                'OCIO',
+                'OTROS',
+            ];
+
+            if (!validFrequencies.includes(frequencia)) {
+                return res
+                    .status(400)
+                    .json({ message: 'Invalid frequency value' });
+            }
+
+            if (!validCategories.includes(categoria)) {
+                return res
+                    .status(400)
+                    .json({ message: 'Invalid category value' });
+            }
+
+            const newHabito = await prisma.habito.create({
+                data: {
+                    nombre,
+                    frequencia,
+                    categoria,
+                    userId,
+                },
+            });
+
+            res.status(201).json({
+                message: 'Habit created successfully',
+                habito: newHabito,
+            });
+        } catch (err) {
+            console.error('Error creating habit:', err.message);
+            res.status(500).json({
+                message: 'Error creating habit. Please try again later.',
+            });
+        }
+    }
+);
+
+app.get(
+    '/get-habitos',
+    authLib.validateAuthorization, // Ensures user is authenticated
+    async (req, res) => {
+        try {
+            console.log('Fetching habits');
+            const userId = req.userData.userId; // Extract user ID from the authorization middleware
+
+            // Fetch all habits associated with the user
+            const userHabits = await prisma.habito.findMany({
+                where: {
+                    userId: userId,
+                },
+                select: {
+                    habitoId: true,
+                    nombre: true,
+                    frequencia: true,
+                    categoria: true,
+                },
+            });
+
+            // Return the habits
+            res.status(200).json({
+                message: 'Habits fetched successfully',
+                habitos: userHabits,
+            });
+        } catch (err) {
+            console.error('Error fetching habits:', err.message);
+            res.status(500).json({
+                message: 'Error fetching habits. Please try again later.',
+            });
+        }
+    }
+);
+
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });

@@ -294,6 +294,45 @@ app.get(
     }
 );
 
+app.delete(
+    '/delete-habito/:id',
+    authLib.validateAuthorization,
+    async (req, res) => {
+        try {
+            const habitId = parseInt(req.params.id, 10); // Get habit ID from the route params
+            const userId = req.userData.userId; // Get user ID from the authorization middleware
+
+            // Check if the habit exists and belongs to the user
+            console.log('Deleting habit:', habitId);
+            const habit = await prisma.habito.findFirst({
+                where: {
+                    habitoId: habitId,
+                    userId: userId,
+                },
+            });
+
+            if (!habit) {
+                return res.status(404).json({
+                    message:
+                        'Habit not found or you do not have permission to delete it.',
+                });
+            }
+
+            // Delete the habit
+            await prisma.habito.delete({
+                where: {
+                    habitoId: habitId,
+                },
+            });
+
+            res.status(200).json({ message: 'Habit deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting habit:', error.message);
+            res.status(500).json({ message: 'Error deleting habit' });
+        }
+    }
+);
+
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });

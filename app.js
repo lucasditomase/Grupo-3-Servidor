@@ -276,6 +276,7 @@ app.get(
                     nombre: true,
                     frequencia: true,
                     categoria: true,
+                    completado: true,
                 },
             });
 
@@ -332,10 +333,45 @@ app.delete(
         }
     }
 );
+app.put(
+    '/update-habito-completado/:id',
+    authLib.validateAuthorization,
+    async (req, res) => {
+        try {
+            console.log('Updating habit');
+            const habitId = parseInt(req.params.id, 10);
+            const { completado } = req.body;
+            const userId = req.userData.userId;
 
-app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-});
+            const habit = await prisma.habito.findFirst({
+                where: {
+                    habitoId: habitId,
+                    userId: userId,
+                },
+            });
+
+            if (!habit) {
+                return res.status(404).json({
+                    message:
+                        'Habit not found or you do not have permission to update it.',
+                });
+            }
+
+            const updatedHabit = await prisma.habito.update({
+                where: { habitoId: habitId },
+                data: { completado: completado },
+            });
+
+            res.status(200).json({
+                message: 'Habit updated successfully',
+                habito: updatedHabit,
+            });
+        } catch (err) {
+            console.error('Error updating habit:', err.message);
+            res.status(500).json({ message: 'Error updating habit' });
+        }
+    }
+);
 
 // Function to update 'completado' value to false based on frequency
 const updateHabitosCompletado = async (frequencia) => {
@@ -354,5 +390,9 @@ const updateHabitosCompletado = async (frequencia) => {
 schedule.scheduleJob('0 0 * * *', () => updateHabitosCompletado('DIARIA')); // Daily at midnight
 schedule.scheduleJob('0 0 * * 0', () => updateHabitosCompletado('SEMANAL')); // Weekly on Sunday at midnight
 schedule.scheduleJob('0 0 1 * *', () => updateHabitosCompletado('MENSUAL')); // Monthly on the 1st at midnight
+
+app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+});
 
 module.exports = app;

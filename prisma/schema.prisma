@@ -24,6 +24,7 @@ model Habito {
   userId     Int
   frequencia Frequencia
   categoria  Categoria
+  completado Boolean    @default(false)
 
   user User @relation(fields: [userId], references: [userId])
 

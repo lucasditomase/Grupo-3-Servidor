@@ -8,6 +8,7 @@ const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
+const schedule = require('node-schedule');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -213,7 +214,7 @@ app.post(
             // Extract data from request
             const { nombre, frequencia, categoria } = req.body;
             const userId = req.userData.userId; // Extract user ID from the authorization middleware
-
+            console.log('caca');
             // Validate enum values
             const validFrequencies = ['DIARIA', 'SEMANAL', 'MENSUAL'];
             const validCategories = [
@@ -224,13 +225,11 @@ app.post(
                 'OCIO',
                 'OTROS',
             ];
-
             if (!validFrequencies.includes(frequencia)) {
                 return res
                     .status(400)
                     .json({ message: 'Invalid frequency value' });
             }
-
             if (!validCategories.includes(categoria)) {
                 return res
                     .status(400)
@@ -245,7 +244,7 @@ app.post(
                     userId,
                 },
             });
-
+            console.log('cacona');
             res.status(201).json({
                 message: 'Habit created successfully',
                 habito: newHabito,
@@ -299,18 +298,19 @@ app.delete(
     authLib.validateAuthorization,
     async (req, res) => {
         try {
+            console.log('cacona');
             const habitId = parseInt(req.params.id, 10); // Get habit ID from the route params
+            console.log(habitId);
             const userId = req.userData.userId; // Get user ID from the authorization middleware
+            console.log(userId);
 
-            // Check if the habit exists and belongs to the user
-            console.log('Deleting habit:', habitId);
             const habit = await prisma.habito.findFirst({
                 where: {
                     habitoId: habitId,
                     userId: userId,
                 },
             });
-
+            console.log('Deleting habit:', habit);
             if (!habit) {
                 return res.status(404).json({
                     message:
@@ -336,5 +336,23 @@ app.delete(
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
+
+// Function to update 'completado' value to false based on frequency
+const updateHabitosCompletado = async (frequencia) => {
+    try {
+        await prisma.habito.updateMany({
+            where: { frequencia },
+            data: { completado: false },
+        });
+        console.log(`Updated 'completado' to false for ${frequencia} habits`);
+    } catch (err) {
+        console.error(`Error updating ${frequencia} habits:`, err.message);
+    }
+};
+
+// Schedule jobs
+schedule.scheduleJob('0 0 * * *', () => updateHabitosCompletado('DIARIA')); // Daily at midnight
+schedule.scheduleJob('0 0 * * 0', () => updateHabitosCompletado('SEMANAL')); // Weekly on Sunday at midnight
+schedule.scheduleJob('0 0 1 * *', () => updateHabitosCompletado('MENSUAL')); // Monthly on the 1st at midnight
 
 module.exports = app;

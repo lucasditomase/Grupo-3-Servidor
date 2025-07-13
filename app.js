@@ -214,7 +214,6 @@ app.post(
             // Extract data from request
             const { nombre, frequencia, categoria } = req.body;
             const userId = req.userData.userId; // Extract user ID from the authorization middleware
-            console.log('caca');
             // Validate enum values
             const validFrequencies = ['DIARIA', 'SEMANAL', 'MENSUAL'];
             const validCategories = [
@@ -244,7 +243,6 @@ app.post(
                     userId,
                 },
             });
-            console.log('cacona');
             res.status(201).json({
                 message: 'Habit created successfully',
                 habito: newHabito,
@@ -299,7 +297,6 @@ app.delete(
     authLib.validateAuthorization,
     async (req, res) => {
         try {
-            console.log('cacona');
             const habitId = parseInt(req.params.id, 10); // Get habit ID from the route params
             console.log(habitId);
             const userId = req.userData.userId; // Get user ID from the authorization middleware

@@ -19,12 +19,18 @@ model User {
 }
 
 model Habito {
-  habitoId   Int        @id @default(autoincrement())
-  nombre     String
-  userId     Int
-  frequencia Frequencia
-  categoria  Categoria
-  completado Boolean    @default(false)
+  habitoId           Int        @id @default(autoincrement())
+  nombre             String
+  userId             Int
+  frequencia         Frequencia
+  categoria          Categoria
+  completado         Boolean    @default(false)
+
+  // Nuevos campos:
+  prioridad          Prioridad  @default(MEDIA)
+  progreso           Int        @default(0)
+  objetivo           Int        @default(1)
+  lastCompletionDate DateTime?
 
   user User @relation(fields: [userId], references: [userId])
 
@@ -44,4 +50,10 @@ enum Categoria {
   TRABAJO
   OCIO
   OTROS
+}
+
+enum Prioridad {
+  ALTA
+  MEDIA
+  BAJA
 }

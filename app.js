@@ -207,32 +207,25 @@ app.use('/uploads', express.static('uploads'));
 
 app.post(
     '/crear-habito',
-    authLib.validateAuthorization, // Ensures user is authorized
-    validateRequestBody(['nombre', 'frequencia', 'categoria']), // Validates the required fields
+    authLib.validateAuthorization,
+    validateRequestBody(['nombre', 'frequencia', 'categoria']),
     async (req, res) => {
         try {
-            // Extract data from request
-            const { nombre, frequencia, categoria } = req.body;
-            const userId = req.userData.userId; // Extract user ID from the authorization middleware
-            // Validate enum values
+            const { nombre, frequencia, categoria, prioridad = 'MEDIA', progreso = 0, objetivo = 1 } = req.body;
+            const userId = req.userData.userId;
+
+            const validPriorities = ['ALTA', 'MEDIA', 'BAJA'];
             const validFrequencies = ['DIARIA', 'SEMANAL', 'MENSUAL'];
-            const validCategories = [
-                'SALUD',
-                'DEPORTE',
-                'ESTUDIO',
-                'TRABAJO',
-                'OCIO',
-                'OTROS',
-            ];
+            const validCategories = ['SALUD', 'DEPORTE', 'ESTUDIO', 'TRABAJO', 'OCIO', 'OTROS'];
+
             if (!validFrequencies.includes(frequencia)) {
-                return res
-                    .status(400)
-                    .json({ message: 'Invalid frequency value' });
+                return res.status(400).json({ message: 'Invalid frequency value' });
             }
             if (!validCategories.includes(categoria)) {
-                return res
-                    .status(400)
-                    .json({ message: 'Invalid category value' });
+                return res.status(400).json({ message: 'Invalid category value' });
+            }
+            if (!validPriorities.includes(prioridad)) {
+                return res.status(400).json({ message: 'Invalid priority value' });
             }
 
             const newHabito = await prisma.habito.create({
@@ -240,45 +233,47 @@ app.post(
                     nombre,
                     frequencia,
                     categoria,
+                    prioridad,
+                    progreso,
+                    objetivo,
                     userId,
                 },
             });
+
             res.status(201).json({
                 message: 'Habit created successfully',
                 habito: newHabito,
             });
         } catch (err) {
             console.error('Error creating habit:', err.message);
-            res.status(500).json({
-                message: 'Error creating habit. Please try again later.',
-            });
+            res.status(500).json({ message: 'Error creating habit' });
         }
     }
 );
 
 app.get(
     '/get-habitos',
-    authLib.validateAuthorization, // Ensures user is authenticated
+    authLib.validateAuthorization,
     async (req, res) => {
         try {
             console.log('Fetching habits');
-            const userId = req.userData.userId; // Extract user ID from the authorization middleware
+            const userId = req.userData.userId;
 
-            // Fetch all habits associated with the user
             const userHabits = await prisma.habito.findMany({
-                where: {
-                    userId: userId,
-                },
+                where: { userId },
                 select: {
                     habitoId: true,
                     nombre: true,
                     frequencia: true,
                     categoria: true,
                     completado: true,
+                    prioridad: true,
+                    progreso: true,
+                    objetivo: true,
+                    lastCompletionDate: true,
                 },
             });
 
-            // Return the habits
             res.status(200).json({
                 message: 'Habits fetched successfully',
                 habitos: userHabits,
@@ -330,39 +325,35 @@ app.delete(
         }
     }
 );
+
 app.put(
     '/update-habito-completado/:id',
     authLib.validateAuthorization,
     async (req, res) => {
         try {
-            console.log('Updating habit');
             const habitId = parseInt(req.params.id, 10);
-            const { completado } = req.body;
+            const { completado, progreso, objetivo } = req.body;
             const userId = req.userData.userId;
 
             const habit = await prisma.habito.findFirst({
-                where: {
-                    habitoId: habitId,
-                    userId: userId,
-                },
+                where: { habitoId: habitId, userId },
             });
 
             if (!habit) {
-                return res.status(404).json({
-                    message:
-                        'Habit not found or you do not have permission to update it.',
-                });
+                return res.status(404).json({ message: 'Habit not found or unauthorized' });
             }
 
             const updatedHabit = await prisma.habito.update({
                 where: { habitoId: habitId },
-                data: { completado: completado },
+                data: {
+                    completado,
+                    progreso,
+                    objetivo,
+                    lastCompletionDate: completado ? new Date() : null,
+                },
             });
 
-            res.status(200).json({
-                message: 'Habit updated successfully',
-                habito: updatedHabit,
-            });
+            res.status(200).json({ message: 'Habit updated', habito: updatedHabit });
         } catch (err) {
             console.error('Error updating habit:', err.message);
             res.status(500).json({ message: 'Error updating habit' });
@@ -373,13 +364,15 @@ app.put(
 // Function to update 'completado' value to false based on frequency
 const updateHabitosCompletado = async (frequencia) => {
     try {
-        await prisma.habito.updateMany({
+        const result = await prisma.habito.updateMany({
             where: { frequencia },
             data: { completado: false },
         });
-        console.log(`Updated 'completado' to false for ${frequencia} habits`);
+        console.log(
+            `✅ ${result.count} hábitos de frecuencia "${frequencia}" fueron marcados como incompletos.`
+        );
     } catch (err) {
-        console.error(`Error updating ${frequencia} habits:`, err.message);
+        console.error(`❌ Error actualizando hábitos ${frequencia}:`, err.message);
     }
 };
 

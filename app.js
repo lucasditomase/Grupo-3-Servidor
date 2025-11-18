@@ -9,7 +9,14 @@ const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+const rateLimit = require('express-rate-limit');
 
+// Set up rate limiter: maximum of 100 requests per 15 minutes per IP
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: { message: "Too many requests from this IP, please try again later." }
+});
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -288,6 +295,7 @@ app.get(
 );
 
 app.delete(
+    limiter,
     '/delete-habito/:id',
     authLib.validateAuthorization,
     async (req, res) => {
@@ -327,6 +335,7 @@ app.delete(
 );
 
 app.put(
+    limiter,
     '/update-habito-completado/:id',
     authLib.validateAuthorization,
     async (req, res) => {

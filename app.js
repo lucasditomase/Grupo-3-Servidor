@@ -4,12 +4,20 @@ const authLib = require('./lib/authLib');
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
 const fs = require('fs');
+const RateLimit = require('express-rate-limit');
 const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
 
+// Rate limiter: max 100 image uploads per IP per 15 minutes
+const uploadImageLimiter = RateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    keyGenerator: (req) => req.ip, // Default key by IP
+    message: { message: 'Too many image uploads from this IP, please try again later.' }
+});
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -146,6 +154,7 @@ app.get('/uploads/:filename', (req, res) => {
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);
     } else {
+    uploadImageLimiter,
         res.status(404).json({ message: 'Image not found' });
     }
 });

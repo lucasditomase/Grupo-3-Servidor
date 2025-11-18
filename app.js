@@ -4,11 +4,21 @@ const authLib = require('./lib/authLib');
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
 const fs = require('fs');
+const RateLimit = require('express-rate-limit'); // Added for rate limiting
 const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+
+// Set up rate limiter for login route: max 5 requests per 15 min per IP
+const loginRateLimiter = RateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 login requests per windowMs
+    message: {
+        message: 'Too many login attempts from this IP, please try again after 15 minutes.',
+    },
+});
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -41,6 +51,7 @@ const validateRequestBody = (requiredFields) => (req, res, next) => {
             });
         }
     }
+    loginRateLimiter,   // Apply rate limiter here
     next();
 };
 

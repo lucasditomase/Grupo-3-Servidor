@@ -4,10 +4,19 @@ const authLib = require('./lib/authLib');
 const { PrismaClient } = require('@prisma/client');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
+
+// Rate limiter: 100 requests per 15 minutes per IP on sensitive endpoints
+const uploadsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in response headers
+  legacyHeaders: false,  // Disable the X-RateLimit headers
+});
 const schedule = require('node-schedule');
 
 const storage = multer.diskStorage({
@@ -139,7 +148,7 @@ app.post(
     }
 );
 
-app.get('/uploads/:filename', (req, res) => {
+app.get('/uploads/:filename', uploadsLimiter, (req, res) => {
     const filename = req.params.filename;
     const filePath = path.join(__dirname, 'uploads', filename);
 

@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+const rateLimit = require('express-rate-limit');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -253,6 +254,7 @@ app.post(
 
 app.get(
     '/get-habitos',
+    habitsLimiter,
     authLib.validateAuthorization,
     async (req, res) => {
         try {

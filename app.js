@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+const rateLimit = require('express-rate-limit');
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -187,8 +188,16 @@ app.post(
     }
 );
 
+// Limit to 10 profile picture uploads per 15 minutes per IP
+const profilePicUploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { message: 'Too many profile picture uploads from this IP, please try again after 15 minutes.' }
+});
+
 app.post(
     '/upload-profile-picture',
+    profilePicUploadLimiter,
     authLib.validateAuthorization,
     upload.single('profile_picture'),
     async (req, res) => {

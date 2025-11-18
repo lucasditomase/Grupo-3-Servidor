@@ -141,10 +141,21 @@ app.post(
 
 app.get('/uploads/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'uploads', filename);
+    const uploadsDir = path.resolve(__dirname, 'uploads');
+    const requestedPath = path.resolve(uploadsDir, filename);
+    let finalPath;
+    try {
+        finalPath = fs.realpathSync(requestedPath);
+    } catch (e) {
+        return res.status(404).json({ message: 'Image not found' });
+    }
 
-    if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
+    if (!finalPath.startsWith(uploadsDir + path.sep)) {
+        return res.status(403).json({ message: 'Access denied' });
+    }
+
+    if (fs.existsSync(finalPath)) {
+        res.sendFile(finalPath);
     } else {
         res.status(404).json({ message: 'Image not found' });
     }

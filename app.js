@@ -52,7 +52,8 @@ app.post(
         try {
             console.log('Login request received');
             const { email, password } = req.body;
-            console.log(email, password);
+            // Do not log plain-text passwords!
+            console.log(`Login attempted for email: ${email}`);
             const token = await authLib.loginUser(email, password);
 
             if (!token) {

@@ -9,7 +9,14 @@ const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+const rateLimit = require('express-rate-limit');
 
+// Rate limiter for habit creation endpoint
+const crearHabitoLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { message: "Too many habit creations from this IP, please try again later." }
+});
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -206,6 +213,7 @@ app.post(
 app.use('/uploads', express.static('uploads'));
 
 app.post(
+    crearHabitoLimiter,
     '/crear-habito',
     authLib.validateAuthorization,
     validateRequestBody(['nombre', 'frequencia', 'categoria']),

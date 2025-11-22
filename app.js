@@ -5,6 +5,10 @@ const { PrismaClient } = require('@prisma/client');
 const path = require('path');
 const fs = require('fs');
 const RateLimit = require('express-rate-limit'); // Added for rate limiting
+const limiter = RateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+});
 const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
@@ -330,6 +334,7 @@ app.get(
 app.delete(
     '/delete-habito/:id',
     authLib.validateAuthorization,
+    limiter,
     async (req, res) => {
         try {
             const habitId = parseInt(req.params.id, 10); // Get habit ID from the route params
@@ -369,6 +374,7 @@ app.delete(
 app.put(
     '/update-habito-completado/:id',
     authLib.validateAuthorization,
+    limiter,
     async (req, res) => {
         try {
             const habitId = parseInt(req.params.id, 10);

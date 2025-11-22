@@ -154,7 +154,14 @@ app.post(
 
 app.get('/uploads/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'uploads', filename);
+    const uploadsDir = path.join(__dirname, 'uploads');
+    // Construct the absolute path for the requested file
+    const filePath = path.resolve(uploadsDir, filename);
+
+    // Ensure that filePath is within uploadsDir
+    if (!filePath.startsWith(uploadsDir + path.sep)) {
+        return res.status(403).json({ message: 'Forbidden' });
+    }
 
     if (fs.existsSync(filePath)) {
         res.sendFile(filePath);

@@ -382,8 +382,8 @@ app.delete(
 
 app.put(
     '/update-habito-completado/:id',
-    authLib.validateAuthorization,
     limiter,
+    authLib.validateAuthorization,
     async (req, res) => {
         try {
             const habitId = parseInt(req.params.id, 10);

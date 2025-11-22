@@ -342,8 +342,8 @@ app.get(
 
 app.delete(
     '/delete-habito/:id',
-    authLib.validateAuthorization,
     limiter,
+    authLib.validateAuthorization,
     async (req, res) => {
         try {
             const habitId = parseInt(req.params.id, 10); // Get habit ID from the route params

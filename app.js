@@ -9,6 +9,12 @@ const limiter = RateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 requests per windowMs
 });
+// Rate limiter for upload-profile-picture endpoint
+const uploadProfilePicLimiter = RateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // limit each IP to 20 uploads per windowMs
+    message: 'Too many profile picture upload attempts from this IP, please try again later.',
+});
 const app = express();
 const prisma = new PrismaClient();
 const port = 3000;
@@ -233,6 +239,7 @@ app.post(
 
 app.post(
     '/upload-profile-picture',
+    uploadProfilePicLimiter,
     authLib.validateAuthorization,
     upload.single('profile_picture'),
     async (req, res) => {

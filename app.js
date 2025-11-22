@@ -251,6 +251,7 @@ app.use('/uploads', express.static('uploads'));
 
 app.post(
     '/crear-habito',
+    limiter,
     authLib.validateAuthorization,
     validateRequestBody(['nombre', 'frequencia', 'categoria']),
     async (req, res) => {

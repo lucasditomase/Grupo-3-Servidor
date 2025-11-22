@@ -52,13 +52,14 @@ const validateRequestBody = (requiredFields) => (req, res, next) => {
             });
         }
     }
-    loginRateLimiter,   // Apply rate limiter here
+    // Remove ineffective loginRateLimiter reference
     next();
 };
 
 // Login user
 app.post(
     '/login',
+    loginRateLimiter,
     validateRequestBody(['email', 'password']),
     async (req, res) => {
         try {

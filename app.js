@@ -297,6 +297,7 @@ app.post(
 
 app.get(
     '/get-habitos',
+    limiter,
     authLib.validateAuthorization,
     async (req, res) => {
         try {

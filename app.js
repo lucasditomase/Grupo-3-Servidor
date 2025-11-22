@@ -152,7 +152,16 @@ app.post(
     }
 );
 
-app.get('/uploads/:filename', (req, res) => {
+// Rate limiter for downloads: max 100 requests per 15 minutes per IP
+const downloadImageLimiter = RateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many download attempts from this IP, please try again later.' }
+});
+
+app.get('/uploads/:filename', downloadImageLimiter, (req, res) => {
     const filename = req.params.filename;
     const uploadsDir = path.join(__dirname, 'uploads');
     // Construct the absolute path for the requested file

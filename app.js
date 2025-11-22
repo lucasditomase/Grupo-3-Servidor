@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 const port = 3000;
 const multer = require('multer');
 const schedule = require('node-schedule');
+const rateLimit = require('express-rate-limit');
 
 // Set up rate limiter for login route: max 5 requests per 15 min per IP
 const loginRateLimiter = RateLimit({
@@ -162,8 +163,18 @@ app.get('/uploads/:filename', (req, res) => {
     }
 });
 
+// Rate limiter for uploads: max 10 requests per 15 minutes per IP
+const uploadImageLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false,
+    message: { message: 'Too many upload attempts from this IP, please try again later.' }
+});
+
 app.post(
     '/upload-image',
+    uploadImageLimiter,
     validateRequestBody(['image']),
     authLib.validateAuthorization,
     async (req, res) => {
